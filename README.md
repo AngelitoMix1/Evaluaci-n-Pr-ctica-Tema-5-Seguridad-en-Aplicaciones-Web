@@ -1,131 +1,437 @@
-# TaskSync - Gestión de Tareas Colaborativa en Tiempo Real
+# README.md — TaskSync Seguro con HTTPS, JWT y WebSockets
 
-TaskSync es una aplicación web desarrollada con Node.js y Angular que permite a múltiples usuarios gestionar, crear, editar y eliminar tareas de manera colaborativa, reflejando los cambios al instante en todas las pantallas conectadas.
+##  Descripción General
+
+TaskSync es una aplicación web colaborativa desarrollada con Angular y Node.js que implementa múltiples mecanismos de seguridad orientados a la protección de credenciales, autenticación de usuarios, autorización de recursos y cifrado de comunicaciones.
+
+La arquitectura integra:
+
+- Backend REST seguro con Express.
+- Autenticación basada en JWT.
+- Hash de contraseñas con BcryptJS.
+- Comunicación en tiempo real con Socket.IO.
+- HTTPS con certificados SSL/TLS autofirmados.
+- Protección de endpoints mediante middlewares.
+- Manejo seguro de sesiones desde Angular.
 
 ---
 
-## Instrucciones de Instalación y Ejecución
+#  Requisitos Previos
 
-## Requisitos Previos
+Antes de ejecutar el proyecto asegúrate de tener instalado:
 
-- Node.js instalado en tu sistema.
-- Angular CLI instalado globalmente:
+- Node.js
+- Angular CLI
+
+Verificar instalación:
 
 ```bash
-npm install -g @angular/cli
+node -v
+npm -v
+ng version
 ```
 
 ---
 
-## 1. Levantar el Backend (Servidor Node.js)
+#  1. Generación de Certificados SSL/TLS
 
-Abre una terminal y navega a la carpeta del servidor:
+Ubícate dentro de la carpeta del servidor y ejecuta:
+
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout server.key -out server.cert
+```
+
+## Datos sugeridos durante la configuración
+
+| Campo | Valor |
+|---|---|
+| Country Name | MX |
+| State or Province | Hidalgo |
+| Locality Name | Pachuca |
+| Organization Name | ITP |
+| Common Name | localhost |
+
+ Importante:  
+Cuando OpenSSL solicite:
+
+```bash
+Common Name (e.g. server FQDN)
+```
+
+debes escribir exactamente:
+
+```bash
+localhost
+```
+
+---
+
+#  2. Configuración y Ejecución del Backend (Node.js)
+
+## Entrar a la carpeta del servidor
 
 ```bash
 cd server
 ```
 
-Instala las dependencias necesarias:
+## Instalar dependencias
 
 ```bash
 npm install
 ```
 
-Inicia el servidor:
+## Ejecutar el servidor HTTPS
 
 ```bash
 node server.js
 ```
 
-El servidor estará escuchando y listo en:
+## Mensaje esperado en consola
 
 ```bash
-http://localhost:3000
+ Servidor SEGURO ejecutándose exclusivamente bajo HTTPS en el puerto 3000.
 ```
 
 ---
 
-## 2. Levantar el Frontend (Aplicación Angular)
+#  3. Configuración y Ejecución del Frontend (Angular)
 
-Abre otra terminal y navega a la carpeta del cliente:
+Abrir una nueva terminal y navegar al proyecto Angular:
 
 ```bash
 cd tasksync
 ```
 
-Instala las dependencias:
+## Instalar dependencias
 
 ```bash
 npm install
 ```
 
-Inicia el servidor de desarrollo de Angular:
+## Iniciar Angular
 
 ```bash
 ng serve
 ```
 
-Abre tu navegador y entra a:
+## URL de acceso
 
-```bash
+```text
 http://localhost:4200
 ```
 
-Puedes abrir múltiples ventanas o pestañas de incógnito para probar la interacción multiusuario.
-
 ---
 
-## Descripción Técnica: Integración de Axios y Socket.IO
+#  4. Configuración Inicial del Navegador (Paso Obligatorio)
 
-La arquitectura de TaskSync utiliza un modelo híbrido para la comunicación cliente-servidor. Combina peticiones HTTP asíncronas estandarizadas para el manejo de intenciones de usuario, con WebSockets para la actualización reactiva del estado global.
+Debido a que el certificado SSL es autofirmado, los navegadores bloquearán inicialmente las peticiones HTTPS hasta otorgar permisos manualmente.
 
----
+## Pasos
 
-## 1. Axios (Operaciones CRUD y Manejo de Errores)
+1. Abrir directamente:
 
-Axios se implementó de forma modularizada dentro de `TaskService`. Actúa como el canal principal para enviar los datos al servidor (intención de creación, edición o borrado).
-
-- **Control de Promesas:** Se aplicaron bloques `try/catch` en la lógica de los componentes.
-- **Rollback Visual:** Si Axios detecta una falla en la red o un error del servidor, la aplicación captura la excepción y revierte el estado local.
-- **Manejo de Respuestas:** La interfaz solo limpia campos y cierra modos de edición si Axios responde con códigos `200` o `201`.
-
----
-
-## 2. Socket.IO (Sincronización Bidireccional en Tiempo Real)
-
-Mientras Axios comunica la acción individual, Socket.IO se encarga de la distribución colectiva.
-
-El servidor Node.js escucha las peticiones REST y, tras procesarlas, emite eventos:
-
-- `taskAdded`
-- `taskUpdated`
-- `taskDeleted`
-
-Estos eventos se envían a todos los sockets conectados.
-
-El cliente Angular, mediante `SocketService`, mantiene suscripciones activas a dichos eventos.
-
-### Actualización del DOM
-
-Para asegurar renderizado inmediato de cambios y notificaciones, se integró:
-
-```typescript
-cdr.detectChanges();
+```text
+https://localhost:3000/tasks
 ```
 
-Forzando un repintado inmediato de la interfaz.
+2. Aparecerá la advertencia:
+
+```text
+"La conexión no es privada"
+```
+
+3. Seleccionar:
+
+```text
+Configuración avanzada
+```
+
+4. Después hacer clic en:
+
+```text
+Continuar a localhost (no seguro)
+```
+
+5. Se mostrará una respuesta JSON similar a:
+
+```json
+{"message":"Acceso denegado. Token requerido."}
+```
+
+Esto confirma que:
+
+- HTTPS funciona correctamente.
+- El middleware JWT protege la ruta.
+- El navegador ya aceptó el certificado.
+
+6. Finalmente abrir:
+
+```text
+http://localhost:4200
+```
+
+y utilizar la aplicación normalmente.
 
 ---
 
-## Flujo de Interacción Colaborativa
+#  Descripción Técnica de la Seguridad Implementada
 
-1. El Usuario A completa una tarea interactuando con el checkbox.
-2. Axios envía una petición `PUT` al backend con el nuevo estado.
-3. El servidor actualiza datos, responde `200` y emite `taskUpdated`.
-4. El Usuario B recibe el evento por Socket.IO.
-5. Su pantalla se actualiza sin recargar.
-6. Se muestra una notificación indicando quién modificó el tablero.
+La arquitectura de seguridad implementa protección multicapa siguiendo principios de defensa en profundidad.
 
 ---
 
+# 1. Protección de Credenciales
+
+## Hash de Contraseñas con BcryptJS
+
+Las contraseñas nunca se almacenan en texto plano.
+
+Durante el registro:
+
+- El backend genera un hash criptográfico.
+- Se utiliza BcryptJS con:
+
+```js
+saltRounds = 10
+```
+
+## Beneficios
+
+- Protección contra ataques de diccionario.
+- Mitigación de rainbow tables.
+- Mayor costo computacional para fuerza bruta.
+
+---
+
+# 2. Autenticación y Gestión de Sesiones
+
+## JSON Web Tokens (JWT)
+
+Tras iniciar sesión correctamente:
+
+- El servidor genera un JWT firmado con HMAC SHA256.
+- El token contiene expiración automática:
+
+```js
+expiresIn: '1h'
+```
+
+## Almacenamiento Seguro
+
+El frontend almacena el token en:
+
+```js
+sessionStorage
+```
+
+Esto garantiza:
+
+- Eliminación automática al cerrar pestaña.
+- Menor persistencia que localStorage.
+- Reducción de exposición ante robo de sesión.
+
+---
+
+# 3. Protección de Endpoints REST
+
+Se desarrolló el middleware:
+
+```js
+authenticateJWT
+```
+
+El middleware protege:
+
+| Método | Endpoint |
+|---|---|
+| GET | /tasks |
+| POST | /tasks |
+| PUT | /tasks/:id |
+| DELETE | /tasks/:id |
+
+## Validaciones realizadas
+
+- Existencia del token.
+- Formato Bearer válido.
+- Firma JWT auténtica.
+- Expiración del token.
+
+## Respuestas de seguridad
+
+| Código | Significado |
+|---|---|
+| 401 | Unauthorized |
+| 403 | Forbidden |
+
+---
+
+# 4. Manejo Seguro desde Angular
+
+El frontend utiliza Axios para enviar automáticamente:
+
+```http
+Authorization: Bearer <JWT>
+```
+
+en cada petición protegida.
+
+Además:
+
+- Angular detecta errores 401/403.
+- El sistema ejecuta logout forzado.
+- El usuario regresa automáticamente al login.
+
+---
+
+# 5. Seguridad en Tiempo Real (Socket.IO)
+
+La seguridad también fue aplicada a WebSockets.
+
+## Middleware de Handshake
+
+Antes de permitir conexiones Socket.IO:
+
+- El servidor valida:
+
+```js
+socket.handshake.auth.token
+```
+
+## Beneficios
+
+- Solo usuarios autenticados reciben eventos.
+- Se bloquea la inyección de sockets falsos.
+- Protección de eventos colaborativos en tiempo real.
+
+---
+
+#  6. Seguridad HTTPS y SSL/TLS
+
+El backend opera exclusivamente sobre HTTPS utilizando:
+
+- Certificados SSL/TLS autofirmados.
+- `https.createServer()`
+- Cifrado de transporte.
+
+## Beneficios
+
+### Cifrado de datos en tránsito
+
+Evita:
+
+- Sniffing.
+- Intercepción de tráfico.
+- Ataques MITM.
+
+### Protección de credenciales
+
+Los formularios de login y registro viajan cifrados.
+
+### Protección de JWT
+
+Los tokens no pueden visualizarse en texto plano durante la transmisión.
+
+### Seguridad en WebSockets
+
+Socket.IO hereda automáticamente cifrado WSS:
+
+```text
+ws:// → wss://
+```
+
+---
+
+# Justificación de la Opción Seleccionada
+
+## Opción B — HTTPS con Certificados SSL/TLS
+
+Se eligió la Opción B debido a que HTTPS representa la capa crítica de protección para aplicaciones modernas basadas en autenticación por tokens.
+
+## Razones técnicas
+
+### 1. Protección contra ataques MITM
+
+Sin HTTPS:
+
+- Los JWT viajarían en texto plano.
+- Un atacante podría robar sesiones fácilmente.
+
+Con HTTPS:
+
+- Todo el tráfico viaja cifrado.
+- Los datos son ilegibles para terceros.
+
+---
+
+### 2. Protección de formularios sensibles
+
+Las credenciales de usuario:
+
+- Viajan cifradas desde Angular.
+- Son protegidas antes de llegar al backend.
+
+---
+
+### 3. Integración segura con Socket.IO
+
+Al utilizar:
+
+```js
+https.createServer()
+```
+
+Socket.IO opera automáticamente mediante:
+
+```text
+WSS (WebSocket Secure)
+```
+
+Esto garantiza:
+
+- Confidencialidad.
+- Integridad.
+- Privacidad en tiempo real.
+
+---
+
+#  Estructura General del Proyecto
+
+```text
+
+project/
+│
+├── server/
+│   ├── server.js
+│   ├── server.key
+│   ├── server.cert
+│   └── package.json
+│
+├── tasksync/
+│   ├── src/
+│   ├── angular.json
+│   └── package.json
+│
+└── README.md
+```
+
+---
+
+# Tecnologías Utilizadas
+
+## Backend
+
+- Node.js
+- Express
+- HTTPS
+- Socket.IO
+- JSON Web Token
+- BcryptJS
+
+## Frontend
+
+- Angular
+- Axios
+- TypeScript
+
+---
 
