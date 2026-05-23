@@ -1,0 +1,14 @@
+# Dependencias de Node
+node_modules/
+server/node_modules/
+tasksync/node_modules/
+
+# Certificados SSL/TLS (¡Nunca se suben al repo!)
+server/server.key
+server/server.cert
+
+# Archivos de entorno y logs de Angular
+.env
+dist/
+.angular/
+npm-debug.log

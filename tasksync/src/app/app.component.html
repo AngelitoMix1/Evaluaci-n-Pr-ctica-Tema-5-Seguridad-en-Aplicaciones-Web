@@ -1,0 +1,89 @@
+<div class="apple-container">
+  <h1 class="apple-title">TaskSync</h1>
+
+  <div class="apple-alert" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="!isLoggedIn" class="apple-list" style="padding: 30px; max-width: 450px; margin: 0 auto;">
+    <h3 style="text-align: center; margin-bottom: 20px; font-weight: 600;">
+      {{ isRegisterMode ? 'Crear Cuenta' : 'Iniciar Sesión' }}
+    </h3>
+    
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+      <div>
+        <label style="display:block; margin-bottom:5px; font-size:0.9rem; color:#86868b;">Usuario</label>
+        <input type="text" class="apple-input" style="width: 100%; box-sizing: border-box;" [(ngModel)]="authData.username" placeholder="Tu usuario">
+      </div>
+      
+      <div>
+        <label style="display:block; margin-bottom:5px; font-size:0.9rem; color:#86868b;">Contraseña</label>
+        <input type="password" class="apple-input" style="width: 100%; box-sizing: border-box;" [(ngModel)]="authData.password" placeholder="••••••••" (keyup.enter)="handleAuth()">
+      </div>
+
+      <button class="apple-btn-primary" style="height: 45px; margin-top: 10px;" (click)="handleAuth()">
+        {{ isRegisterMode ? 'Registrarse' : 'Ingresar' }}
+      </button>
+
+      <p style="text-align: center; font-size: 0.9rem; color: #86868b; margin-top: 10px;">
+        {{ isRegisterMode ? '¿Ya tienes cuenta?' : '¿Eres nuevo?' }}
+        <a href="javascript:void(0)" style="color: #007aff; text-decoration: none; font-weight: 500;" (click)="isRegisterMode = !isRegisterMode; errorMessage=''">
+          {{ isRegisterMode ? 'Inicia Sesión' : 'Regístrate aquí' }}
+        </a>
+      </p>
+    </div>
+  </div>
+
+  <div *ngIf="isLoggedIn">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <p style="color: #86868b; margin: 0; font-weight: 500;">
+        👤 Sesión de: <strong style="color: #1d1d1f;">{{ username }}</strong>
+      </p>
+      <button class="apple-btn-sm btn-edit" style="background-color: #ff3b30; color: white;" (click)="forceLogout()">
+        Cerrar Sesión
+      </button>
+    </div>
+
+    <div class="apple-input-group">
+      <input type="text" class="apple-input" placeholder="Nueva tarea protegida..." [(ngModel)]="newTaskTitle" (keyup.enter)="addTask()">
+      <button class="apple-btn-primary" (click)="addTask()" [disabled]="!newTaskTitle.trim()">Agregar</button>
+    </div>
+
+    <div class="apple-info" *ngIf="isLoading">
+      Sincronizando de forma segura...
+    </div>
+
+    <div class="apple-info" *ngIf="!isLoading && tasks.length === 0">
+      Todo protegido. No hay tareas pendientes.
+    </div>
+
+    <ul class="apple-list" *ngIf="!isLoading && tasks.length > 0">
+      <li class="apple-list-item" *ngFor="let task of tasks">
+        
+        <div *ngIf="editingTaskId !== task.id" style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; flex-grow: 1;">
+            <input class="apple-checkbox" type="checkbox" [checked]="task.completed" (change)="toggleTask(task)">
+            <span class="task-text" [class.task-completed]="task.completed">
+              {{ task.title }}
+            </span>
+          </div>
+          <div style="display: flex;">
+            <button class="apple-btn-sm btn-edit" (click)="startEdit(task)">Editar</button>
+            <button class="apple-btn-sm btn-delete" (click)="deleteTask(task.id)">Eliminar</button>
+          </div>
+        </div>
+
+        <div *ngIf="editingTaskId === task.id" style="display: flex; width: 100%; gap: 10px;">
+          <input type="text" class="apple-input" style="padding: 10px 15px; box-shadow: inset 0 0 0 1px #007aff;" [(ngModel)]="editTaskTitle" (keyup.enter)="saveEdit(task)">
+          <button class="apple-btn-sm btn-save" (click)="saveEdit(task)">Guardar</button>
+          <button class="apple-btn-sm btn-edit" (click)="cancelEdit()">Cancelar</button>
+        </div>
+
+      </li>
+    </ul>
+  </div>
+
+  <div class="apple-toast" *ngIf="notificationMessage">
+    {{ notificationMessage }}
+  </div>
+</div>
